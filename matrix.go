@@ -17,16 +17,6 @@ type Matrix interface {
 	// At returns the value of a matrix element at (r, c). It will panic if r or c are
 	// out of bounds for the matrix.
 	At(r, c int) float64
-
-	// Row returns a slice of float64 for the row specified. It will panic if the index
-	// is out of bounds. If the call requires a copy and c is long enough to hold the row
-	// it will be used and returned.
-	Row(int, c []float64) []float64
-
-	// Col returns a slice of float64 for the column specified. It will panic if the index
-	// is out of bounds. If the call requires a copy and c is long enough to hold the column
-	// it will be used and returned.
-	Col(int, c []float64) []float64
 }
 
 // Mutable is a matrix interface type that allows elements to be altered.
@@ -36,6 +26,19 @@ type Mutable interface {
 	Set(r, c int, v float64)
 
 	Matrix
+}
+
+// A Vectorer can return rows and columns of the represented matrix.
+type Vectorer interface {
+	// Row returns a slice of float64 for the row specified. It will panic if the index
+	// is out of bounds. If the call requires a copy and c is long enough to hold the row
+	// it will be used and returned.
+	Row(int, c []float64) []float64
+
+	// Col returns a slice of float64 for the column specified. It will panic if the index
+	// is out of bounds. If the call requires a copy and c is long enough to hold the column
+	// it will be used and returned.
+	Col(int, c []float64) []float64
 }
 
 // A Cloner can make a copy of its elements into the mutable matrix c.

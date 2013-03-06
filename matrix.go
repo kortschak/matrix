@@ -167,6 +167,9 @@ type BlasMatrix struct {
 	Data       []float64
 }
 
+// Matrix converts a BlasMatrix to a Matrix.
+func (b BlasMatrix) Matrix() Matrix
+
 // A Blasser can return a BlasMatrix representation of the receiver. Changes to the BlasMatrix.Data
 // slice will be reflected in the original matrix, changes to the Rows, Cols and Stride fields will not.
 type Blasser interface {

@@ -19,12 +19,14 @@ type Matrix interface {
 	At(r, c int) float64
 
 	// Row returns a slice of float64 for the row specified. It will panic if the index
-	// is out of bounds.
-	Row(int) []float64
+	// is out of bounds. If the call requires a copy and c is long enough to hold the row
+	// it will be used and returned.
+	Row(int, c []float64) []float64
 
-	// Col returns a slice of float for the column specified. It will panic if the index
-	// is out of bounds.
-	Col(int) []float64
+	// Col returns a slice of float64 for the column specified. It will panic if the index
+	// is out of bounds. If the call requires a copy and c is long enough to hold the column
+	// it will be used and returned.
+	Col(int, c []float64) []float64
 }
 
 // Mutable is a matrix interface type that allows elements to be altered.

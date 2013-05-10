@@ -4,15 +4,20 @@
 
 // Package matrix provides basic linear algebra operations.
 //
-// Note that in all interfaces, a c parameter is the recipient of the data and may be
-// nil, in which case a new matrix is allocated. When these methods return a Matrix, this
-// Matrix will be identical to c when the call returns.
+// Note that in all interfaces that assign the result to the receiver, the receiver must
+// be either the correct dimensions for the result or the zero value for the concrete type
+// of the matrix. In the latter case, matrix data is allocated and stored in the receiver.
+// If the matrix dimensions do not match the result, the method must panic.
 package matrix
+
+import (
+	"github.com/gonum/blas"
+)
 
 // Matrix is the basic matrix interface type.
 type Matrix interface {
 	// Dims returns the dimensions of a Matrix.
-	Dims() (r int, c int)
+	Dims() (r, c int)
 
 	// At returns the value of a matrix element at (r, c). It will panic if r or c are
 	// out of bounds for the matrix.
@@ -41,9 +46,9 @@ type Vectorer interface {
 	Col(int, c []float64) []float64
 }
 
-// A Cloner can make a copy of its elements into the mutable matrix c.
+// A Cloner can make a copy of the elements of a into the receiver.
 type Cloner interface {
-	Clone(c Mutable) Matrix
+	Clone(a Matrix)
 }
 
 // A Normer returns the specified matrix norm, o of the matrix represented by the receiver.
@@ -52,10 +57,9 @@ type Normer interface {
 	Norm(o int) (float64, error)
 }
 
-// A Transposer can transpose the matrix represented by the receiver, placing the elements into c.
-// If the concrete value of c is the receiver a new Mutable of the same type is allocated.
+// A Transposer can transpose the matrix represented by a, placing the elements into the receiver.
 type Transposer interface {
-	T(c Mutable) Matrix
+	T(a Matrix)
 }
 
 // A Deter can return the determinant of the represented matrix.
@@ -63,28 +67,29 @@ type Deter interface {
 	Det() float64
 }
 
-// An Inver can calculate the inverse of the matrix represented by the receiver. ErrSingular is
-// returned if there is not inverse of the matrix.
+// An Inver can calculate the inverse of the matrix represented by a and stored in the receiver.
+// ErrSingular is returned if there is no inverse of the matrix.
 type Inver interface {
-	Inv(c Mutable) (Matrix, error)
+	Inv(a Matrix) error
 }
 
-// An Adder can add the matrices represented by b and the receiver, placing the result in c. Add
+// An Adder can add the matrices represented by a and b, placing the result in the receiver. Add
 // will panic if the two matrices do not have the same shape.
 type Adder interface {
-	Add(b Matrix, c Mutable) Matrix
+	Add(a, b Matrix)
 }
 
-// A Suber can subtract the matrix represented by b from the receiver, placing the result in c. Sub
-// will panic if the two matrices do not have the same shape.
+// A Suber can subtract the matrix b from a, placing the result in the receiver. Sub will panic if
+// the two matrices do not have the same shape.
 type Suber interface {
-	Sub(b Matrix, c Mutable) Matrix
+	Sub(a, b Matrix)
 }
 
-// An ElemMuler can perform element-wise multiplication of the matrices represented by b and the
-// receive, placing the result in c. MulEmen will panic if the two matrices do not have the same shape.
+// An ElemMuler can perform element-wise multiplication of the matrices represented by a and b,
+// placing the result in the receiver. MulEmen will panic if the two matrices do not have the same
+// shape.
 type ElemMuler interface {
-	MulElem(b Matrix, c Mutable) Matrix
+	MulElem(a, b Matrix)
 }
 
 // An Equaler can compare the matrices represented by b and the receiver. Matrices with non-equal shapes
@@ -99,10 +104,10 @@ type ApproxEqualer interface {
 	EqualsApprox(b Matrix, epsilon float64) bool
 }
 
-// A Scaler can perform scalar multiplication of the matrix represented by the receiver with f,
-// placing the result in c.
+// A Scaler can perform scalar multiplication of the matrix represented by a with f, placing
+// the result in the receiver.
 type Scaler interface {
-	Scalar(f float64, c Mutable) Matrix
+	Scale(f float64, a Matrix)
 }
 
 // A Sumer can return the sum of elements of the matrix represented by the receiver.
@@ -110,11 +115,10 @@ type Sumer interface {
 	Sum() float64
 }
 
-// A Muler can determine the matrix product of b and the receiver, placing the result in c.
-// If the number of column of the receiver does not equal the number of rows in b, Mul will panic.
-// If the concrete value of c is the receiver a new Mutable of the same type is allocated.
+// A Muler can determine the matrix product of a and b, placing the result in the receiver.
+// If the number of column of the a does not equal the number of rows in b, Mul will panic.
 type Muler interface {
-	Mul(b, c Mutable) Matrix
+	Mul(a, b Matrix)
 }
 
 // A Dotter can determine the inner product of the elements of the receiver and b. If the shapes of
@@ -123,26 +127,27 @@ type Dotter interface {
 	Dot(b Matrix) float64
 }
 
-// A Stacker can create the stacked matrix of the receiver with b, where b is placed in the higher
-// indexed rows. The result of stacking is placed in c. Stack will panic if the two input matrices do
-// not have the same number of columns.
+// A Stacker can create the stacked matrix of a with b, where b is placed in the higher indexed rows.
+// The result of stacking is placed in the receiver. Stack will panic if the two input matrices do not
+// have the same number of columns.
 type Stacker interface {
-	Stack(b, c Mutable) Matrix
+	Stack(a, b Matrix)
 }
 
-// An Augmenter can create the augmented matrix of the receiver with b, where b is placed in the higher
-// indexed columns. The result of augmentation is placed in c. Augment will panic if the two input
-// matrices do not have the same number of rows.
+// An Augmenter can create the augmented matrix of the a with b, where b is placed in the higher
+// indexed columns. The result of augmentation is placed in the receiver. Augment will panic if the
+// two input matrices do not have the same number of rows.
 type Augmenter interface {
-	Augment(b, c Mutable) Matrix
+	Augment(a, b Matrix)
 }
 
 // An ApplyFunc takes a row/col index and element value and returns some function of that tuple.
 type ApplyFunc func(r, c int, v float64) float64
 
-// An Applyer can apply an Applyfunc f to each of its elements, placing the resulting matrix in c.
+// An Applyer can apply an Applyfunc f to each of the elements of the matrix represented by a,
+// placing the resulting matrix in the receiver.
 type Applyer interface {
-	Apply(f ApplyFunc, c Mutable) Matrix
+	Apply(f ApplyFunc, a Matrix)
 }
 
 // A Tracer can return the trace of the matrix represented by the receiver. Trace will panic if the
@@ -151,27 +156,58 @@ type Tracer interface {
 	Trace() float64
 }
 
-// A Uer can return the upper triangular matrix of the receiver, placing the result in c. If the
-// concrete value of c is the receiver, the lower residue is zeroed.
+// A Uer can return the upper triangular matrix of the matrix represented by a, placing the result
+// in the receiver. If the concrete value of a is the receiver, the lower residue is zeroed.
 type Uer interface {
-	U(c Mutable) Matrix
+	U(a Matrix)
 }
 
-// An Ler can return the lower triangular matrix of the receiver, placing the result in c. If the
-// concrete value of c is the receiver, the upper residue is zeroed.
+// An Ler can return the lower triangular matrix of the matrix represented by a, placing the result
+// in the receiver. If the concrete value of a is the receiver, the upper residue is zeroed.
 type Ler interface {
-	L(c Mutable) Matrix
+	L(a Matrix)
 }
 
 // BlasMatrix represents a cblas native representation of a matrix.
 type BlasMatrix struct {
+	Order      blas.Order
 	Rows, Cols int
 	Stride     int
 	Data       []float64
 }
 
-// Matrix converts a BlasMatrix to a Matrix.
-func (b BlasMatrix) Matrix() Matrix
+// Matrix converts a BlasMatrix to a Matrix, writing the data to the matrix represented by c. If c is a
+// Loader, that method will be called, otherwise the matrix must be the correct shape.
+func (b BlasMatrix) Matrix(c Mutable) {
+	if c, ok := c.(BlasLoader); ok {
+		c.LoadBlas(b)
+		return
+	}
+	if rows, cols := c.Dims(); rows != b.Rows || cols != b.Cols {
+		panic(ErrShape)
+	}
+	if b.Order == blas.ColMajor {
+		for col := 0; col < b.Cols; col++ {
+			for row, v := range b.Data[col*b.Stride : col*b.Stride+b.Rows] {
+				c.Set(row, col, v)
+			}
+		}
+	} else if b.Order == blas.RowMajor {
+		for row := 0; row < b.Rows; row++ {
+			for col, v := range b.Data[row*b.Stride : row*b.Stride+b.Cols] {
+				c.Set(row, col, v)
+			}
+		}
+	} else {
+		panic("matrix: illegal order")
+	}
+}
+
+// A Loader can directly load a BlasMatrix representation. There is no restriction on the shape of the
+// receiver.
+type BlasLoader interface {
+	LoadBlas(a BlasMatrix)
+}
 
 // A Blasser can return a BlasMatrix representation of the receiver. Changes to the BlasMatrix.Data
 // slice will be reflected in the original matrix, changes to the Rows, Cols and Stride fields will not.

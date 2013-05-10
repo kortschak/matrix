@@ -134,9 +134,9 @@ type Stacker interface {
 	Stack(a, b Matrix)
 }
 
-// An Augmenter can create the augmented matrix of the a with b, where b is placed in the higher
-// indexed columns. The result of augmentation is placed in the receiver. Augment will panic if the
-// two input matrices do not have the same number of rows.
+// An Augmenter can create the augmented matrix of a with b, where b is placed in the higher indexed
+// columns. The result of augmentation is placed in the receiver. Augment will panic if the two input
+// matrices do not have the same number of rows.
 type Augmenter interface {
 	Augment(a, b Matrix)
 }

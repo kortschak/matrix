@@ -215,12 +215,12 @@ type Blasser interface {
 	BlasMatrix() BlasMatrix
 }
 
-// A Panicker is a function that returns a matrix and may panic.
-type Panicker func() Matrix
+// A Panicker is a function that may panic.
+type Panicker func()
 
 // Maybe will recover a panic with a type matrix.Error from fn, and return this error.
 // Any other error is re-panicked.
-func Maybe(fn Panicker) (m Matrix, err error) {
+func Maybe(fn Panicker) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			var ok bool
@@ -230,7 +230,8 @@ func Maybe(fn Panicker) (m Matrix, err error) {
 			panic(r)
 		}
 	}()
-	return fn(), nil
+	fn()
+	return
 }
 
 // A FloatPanicker is a function that returns a float64 and may panic.
@@ -251,13 +252,12 @@ func MaybeFloat(fn FloatPanicker) (f float64, err error) {
 	return fn(), nil
 }
 
-// Must can be used to wrap a function returning a matrix and an error.
+// Must can be used to wrap a function returning an error.
 // If the returned error is not nil, Must will panic.
-func Must(m Matrix, err error) Matrix {
+func Must(err error) {
 	if err != nil {
 		panic(err)
 	}
-	return m
 }
 
 // Type Error represents matrix package errors. These errors can be recovered by Maybe wrappers.

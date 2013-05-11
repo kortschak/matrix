@@ -38,12 +38,12 @@ type Vectorer interface {
 	// Row returns a slice of float64 for the row specified. It will panic if the index
 	// is out of bounds. If the call requires a copy and c is long enough to hold the row
 	// it will be used and returned.
-	Row(int, c []float64) []float64
+	Row(r int, row []float64) []float64
 
 	// Col returns a slice of float64 for the column specified. It will panic if the index
 	// is out of bounds. If the call requires a copy and c is long enough to hold the column
 	// it will be used and returned.
-	Col(int, c []float64) []float64
+	Col(c int, col []float64) []float64
 }
 
 // A Cloner can make a copy of the elements of a into the receiver.

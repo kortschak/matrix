@@ -51,6 +51,24 @@ type Cloner interface {
 	Clone(a Matrix)
 }
 
+// A Viewer can extract a submatrix view of a into the receiver, starting at row i, column j
+// and extending r rows and c columns. If i or j are illegal indices, or r or c extend beyond
+// the bounds of the matrix Submatrix will panic with ErrIndexOutOfRange. There is no restriction
+// on the shape of the receiver and changes in the elements of the submatrix must be reflected
+// in the original and vice versa.
+type Viewer interface {
+	View(a Matrix, i, j, r, c int)
+}
+
+// A Submatrixer can extract a submatrix from a into the receiver, starting at row i, column j
+// and extending r rows and c columns. If i or j are illegal indices, or r or c extend beyond
+// the bounds of the matrix Submatrix will panic with ErrIndexOutOfRange. There is no restriction
+// on the shape of the receiver but changes in the elements of the submatrix must not be
+// reflected in the original.
+type Submatrixer interface {
+	Submatrix(a Matrix, i, j, r, c int)
+}
+
 // A Normer returns the specified matrix norm, o of the matrix represented by the receiver.
 // ErrNormOrder is returned if o is not valid.
 type Normer interface {

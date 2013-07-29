@@ -36,14 +36,27 @@ type Mutable interface {
 // A Vectorer can return rows and columns of the represented matrix.
 type Vectorer interface {
 	// Row returns a slice of float64 for the row specified. It will panic if the index
-	// is out of bounds. If the call requires a copy and c is long enough to hold the row
+	// is out of bounds. If the call requires a copy and row is long enough to hold the row
 	// it will be used and returned.
 	Row(r int, row []float64) []float64
 
 	// Col returns a slice of float64 for the column specified. It will panic if the index
-	// is out of bounds. If the call requires a copy and c is long enough to hold the column
+	// is out of bounds. If the call requires a copy and col is long enough to hold the column
 	// it will be used and returned.
 	Col(c int, col []float64) []float64
+}
+
+// A VectorSetter can set rows and columns in the represented matrix.
+type VectorSetter interface {
+	// SetRow sets the values of the specified row to the values held in a slice of float64.
+	// It will panic if the index is out of bounds or the row length is not the same as the row
+	// dimension of the matrix. The row slice must be reusable after the call.
+	SetRow(r int, row []float64)
+
+	// SetCol sets the values of the specified column to the values held in a slice of float64.
+	// It will panic if the index is out of bounds or the column length is not the same as the
+	// column dimension of the matrix. The column slice must be reusable after the call.
+	SetCol(c int, col []float64)
 }
 
 // A Cloner can make a copy of the elements of a into the receiver.
@@ -294,4 +307,5 @@ const (
 	ErrShape           = Error("matrix: dimension mismatch")
 	ErrIllegalStride   = Error("matrix: illegal stride")
 	ErrPivot           = Error("matrix: malformed pivot list")
+	ErrIllegalOrder    = Error("matrix: illegal order")
 )

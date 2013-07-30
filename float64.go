@@ -65,6 +65,28 @@ type Float64 struct {
 	mat BlasMatrix
 }
 
+func NewFloat64(r, c int, mat []float64) (*Float64, error) {
+	if r*c != len(mat) {
+		return nil, ErrShape
+	}
+	var stride int
+	switch blasOrder {
+	case blas.RowMajor:
+		stride = c
+	case blas.ColMajor:
+		stride = r
+	default:
+		panic(ErrIllegalOrder)
+	}
+	return &Float64{BlasMatrix{
+		Order:  blasOrder,
+		Rows:   r,
+		Cols:   c,
+		Stride: stride,
+		Data:   mat,
+	}}, nil
+}
+
 func (m *Float64) LoadBlas(b BlasMatrix) { m.mat = b }
 
 func (m *Float64) BlasMatrix() BlasMatrix { return m.mat }

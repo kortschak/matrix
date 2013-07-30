@@ -64,13 +64,12 @@ type Cloner interface {
 	Clone(a Matrix)
 }
 
-// A Viewer can extract a submatrix view of a into the receiver, starting at row i, column j
+// A Viewer can extract a submatrix view of of the receiver, starting at row i, column j
 // and extending r rows and c columns. If i or j are illegal indices, or r or c extend beyond
-// the bounds of the matrix Submatrix will panic with ErrIndexOutOfRange. There is no restriction
-// on the shape of the receiver and changes in the elements of the submatrix must be reflected
-// in the original and vice versa.
+// the bounds of the matrix View will panic with ErrIndexOutOfRange. Changes in the
+// elements of the submatrix must be reflected in the original and vice versa.
 type Viewer interface {
-	View(a Matrix, i, j, r, c int)
+	View(i, j, r, c int) Matrix
 }
 
 // A Submatrixer can extract a submatrix from a into the receiver, starting at row i, column j

@@ -180,27 +180,23 @@ func (m *Float64) SetRow(r int, v []float64) {
 	}
 }
 
-// View fills m with a view on the Matrix a which must be a Float64.
-func (m *Float64) View(a Matrix, i, j, r, c int) {
-	ac := a.(*Float64)
-	m.mat.Order = ac.mat.Order
-	m.mat.Rows = r
-	m.mat.Cols = c
-	m.mat.Stride = ac.mat.Stride
-	switch ac.mat.Order {
+// View returns a view on the receiver.
+func (m *Float64) View(i, j, r, c int) Matrix {
+	v := *m
+	switch m.mat.Order {
 	case blas.RowMajor:
-		m.mat.Data = ac.mat.Data[i*ac.mat.Stride+j : (i+r-1)*ac.mat.Stride+(j+c)]
+		v.mat.Data = m.mat.Data[i*m.mat.Stride+j : (i+r-1)*m.mat.Stride+(j+c)]
 	case blas.ColMajor:
-		m.mat.Data = ac.mat.Data[i+j*ac.mat.Stride : (i+r)+(j+c-1)*ac.mat.Stride]
+		v.mat.Data = m.mat.Data[i+j*m.mat.Stride : (i+r)+(j+c-1)*m.mat.Stride]
 	default:
 		panic(ErrIllegalOrder)
 	}
+	return &v
 }
 
 func (m *Float64) Submatrix(a Matrix, i, j, r, c int) {
 	// This is probably a bad idea, but for the moment, we do it.
-	m.View(a, i, j, r, c)
-	m.Clone(m)
+	m.Clone(m.View(i, j, r, c))
 }
 
 func (m *Float64) Clone(a Matrix) {

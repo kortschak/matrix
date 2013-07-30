@@ -182,7 +182,12 @@ func (m *Float64) SetRow(r int, v []float64) {
 
 // View returns a view on the receiver.
 func (m *Float64) View(i, j, r, c int) Matrix {
-	v := *m
+	v := Float64{BlasMatrix{
+		Order:  m.mat.Order,
+		Rows:   r - i,
+		Cols:   c - j,
+		Stride: m.mat.Stride,
+	}}
 	switch m.mat.Order {
 	case blas.RowMajor:
 		v.mat.Data = m.mat.Data[i*m.mat.Stride+j : (i+r-1)*m.mat.Stride+(j+c)]

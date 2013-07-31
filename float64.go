@@ -95,6 +95,13 @@ func (m *Float64) isZero() bool {
 	return m.mat.Cols == 0 || m.mat.Rows == 0
 }
 
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func realloc(f []float64, l int) []float64 {
 	if l < cap(f) {
 		return f[:l]
@@ -126,17 +133,18 @@ func (m *Float64) Set(r, c int, v float64) {
 
 func (m *Float64) Dims() (r, c int) { return m.mat.Rows, m.mat.Cols }
 
-func (m *Float64) Col(c int, col []float64) []float64 {
+func (m *Float64) Col(col []float64, c int) []float64 {
 	if c >= m.mat.Cols || c < 0 {
 		panic(ErrIndexOutOfRange)
 	}
 
-	if len(col) < m.mat.Rows {
+	if col == nil {
 		col = make([]float64, m.mat.Rows)
 	}
 	switch m.mat.Order {
 	case blas.RowMajor:
-		blasEngine.Dcopy(m.mat.Rows, m.mat.Data[c:], m.mat.Stride, col, 1)
+		col = col[:min(len(col), m.mat.Rows)]
+		blasEngine.Dcopy(len(col), m.mat.Data[c:], m.mat.Stride, col, 1)
 	case blas.ColMajor:
 		copy(col, m.mat.Data[c*m.mat.Stride:c*m.mat.Stride+m.mat.Rows])
 	default:
@@ -146,37 +154,37 @@ func (m *Float64) Col(c int, col []float64) []float64 {
 	return col
 }
 
-func (m *Float64) SetCol(c int, v []float64) {
+func (m *Float64) SetCol(c int, v []float64) int {
 	if c >= m.mat.Cols || c < 0 {
 		panic(ErrIndexOutOfRange)
 	}
 
-	if len(v) != m.mat.Rows {
-		panic(ErrShape)
-	}
 	switch m.mat.Order {
 	case blas.RowMajor:
-		blasEngine.Dcopy(m.mat.Rows, v, 1, m.mat.Data[c:], m.mat.Stride)
+		blasEngine.Dcopy(min(len(v), m.mat.Rows), v, 1, m.mat.Data[c:], m.mat.Stride)
 	case blas.ColMajor:
 		copy(m.mat.Data[c*m.mat.Stride:c*m.mat.Stride+m.mat.Rows], v)
 	default:
 		panic(ErrIllegalOrder)
 	}
+
+	return min(len(v), m.mat.Rows)
 }
 
-func (m *Float64) Row(r int, row []float64) []float64 {
+func (m *Float64) Row(row []float64, r int) []float64 {
 	if r >= m.mat.Rows || r < 0 {
 		panic(ErrIndexOutOfRange)
 	}
 
-	if len(row) < m.mat.Cols {
+	if row == nil {
 		row = make([]float64, m.mat.Cols)
 	}
 	switch m.mat.Order {
 	case blas.RowMajor:
 		copy(row, m.mat.Data[r*m.mat.Stride:r*m.mat.Stride+m.mat.Cols])
 	case blas.ColMajor:
-		blasEngine.Dcopy(m.mat.Cols, m.mat.Data[r:], m.mat.Stride, row, 1)
+		row = row[:min(len(row), m.mat.Cols)]
+		blasEngine.Dcopy(len(row), m.mat.Data[r:], m.mat.Stride, row, 1)
 	default:
 		panic(ErrIllegalOrder)
 	}
@@ -184,22 +192,21 @@ func (m *Float64) Row(r int, row []float64) []float64 {
 	return row
 }
 
-func (m *Float64) SetRow(r int, v []float64) {
+func (m *Float64) SetRow(r int, v []float64) int {
 	if r >= m.mat.Rows || r < 0 {
 		panic(ErrIndexOutOfRange)
 	}
 
-	if len(v) != m.mat.Cols {
-		panic(ErrShape)
-	}
 	switch m.mat.Order {
 	case blas.RowMajor:
 		copy(m.mat.Data[r*m.mat.Stride:r*m.mat.Stride+m.mat.Cols], v)
 	case blas.ColMajor:
-		blasEngine.Dcopy(m.mat.Cols, v, 1, m.mat.Data[r:], m.mat.Stride)
+		blasEngine.Dcopy(min(len(v), m.mat.Cols), v, 1, m.mat.Data[r:], m.mat.Stride)
 	default:
 		panic(ErrIllegalOrder)
 	}
+
+	return min(len(v), m.mat.Cols)
 }
 
 // View returns a view on the receiver.
@@ -239,12 +246,12 @@ func (m *Float64) Clone(a Matrix) {
 		switch blasOrder {
 		case blas.RowMajor:
 			for i := 0; i < r; i++ {
-				copy(data[i*c:(i+1)*c], a.mat.Data[i*a.mat.Stride:i*a.mat.Stride+r])
+				copy(data[i*c:(i+1)*c], a.mat.Data[i*a.mat.Stride:i*a.mat.Stride+c])
 			}
 			m.mat.Stride = c
 		case blas.ColMajor:
 			for i := 0; i < c; i++ {
-				copy(data[i*r:(i+1)*r], a.mat.Data[i*a.mat.Stride:i*a.mat.Stride+c])
+				copy(data[i*r:(i+1)*r], a.mat.Data[i*a.mat.Stride:i*a.mat.Stride+r])
 			}
 			m.mat.Stride = r
 		default:
@@ -255,18 +262,60 @@ func (m *Float64) Clone(a Matrix) {
 		switch blasOrder {
 		case blas.RowMajor:
 			for i := 0; i < r; i++ {
-				a.Row(i, data[i*c:(i+1)*c])
+				a.Row(data[i*c:(i+1)*c], i)
 			}
 			m.mat.Stride = c
 		case blas.ColMajor:
 			for i := 0; i < c; i++ {
-				a.Col(i, data[i*r:(i+1)*r])
+				a.Col(data[i*r:(i+1)*r], i)
 			}
 			m.mat.Stride = r
 		default:
 			panic(ErrIllegalOrder)
 		}
 		m.mat.Data = data
+	default:
+		m.mat.Data = data
+		for i := 0; i < r; i++ {
+			for j := 0; j < c; j++ {
+				m.Set(i, j, a.At(i, j))
+			}
+		}
+	}
+}
+
+func (m *Float64) Copy(a Matrix) {
+	r, c := a.Dims()
+	r = min(r, m.mat.Rows)
+	c = min(c, m.mat.Cols)
+
+	switch a := a.(type) {
+	case *Float64:
+		switch blasOrder {
+		case blas.RowMajor:
+			for i := 0; i < r; i++ {
+				copy(m.mat.Data[i*m.mat.Stride:i*m.mat.Stride+c], a.mat.Data[i*a.mat.Stride:i*a.mat.Stride+c])
+			}
+		case blas.ColMajor:
+			for i := 0; i < c; i++ {
+				copy(m.mat.Data[i*m.mat.Stride:i*m.mat.Stride+r], a.mat.Data[i*a.mat.Stride:i*a.mat.Stride+r])
+			}
+		default:
+			panic(ErrIllegalOrder)
+		}
+	case Vectorer:
+		switch blasOrder {
+		case blas.RowMajor:
+			for i := 0; i < r; i++ {
+				a.Row(m.mat.Data[i*m.mat.Stride:i*m.mat.Stride+c], i)
+			}
+		case blas.ColMajor:
+			for i := 0; i < c; i++ {
+				a.Col(m.mat.Data[i*m.mat.Stride:i*m.mat.Stride+r], i)
+			}
+		default:
+			panic(ErrIllegalOrder)
+		}
 	default:
 		for i := 0; i < r; i++ {
 			for j := 0; j < c; j++ {
@@ -385,9 +434,8 @@ func (m *Float64) Add(a, b Matrix) {
 				rowa := make([]float64, ac)
 				rowb := make([]float64, bc)
 				for r := 0; r < ar; r++ {
-					a.Row(r, rowa)
-					b.Row(r, rowb)
-					for i, v := range rowb {
+					a.Row(rowa, r)
+					for i, v := range b.Row(rowb, r) {
 						rowa[i] += v
 					}
 					copy(m.mat.Data[r*m.mat.Stride:r*m.mat.Stride+m.mat.Cols], rowa)
@@ -396,9 +444,8 @@ func (m *Float64) Add(a, b Matrix) {
 				cola := make([]float64, ar)
 				colb := make([]float64, br)
 				for c := 0; c < ac; c++ {
-					a.Col(c, cola)
-					b.Col(c, colb)
-					for i, v := range colb {
+					a.Col(cola, c)
+					for i, v := range b.Col(colb, c) {
 						cola[i] += v
 					}
 					copy(m.mat.Data[c*m.mat.Stride:c*m.mat.Stride+m.mat.Rows], cola)
@@ -477,9 +524,8 @@ func (m *Float64) Sub(a, b Matrix) {
 				rowa := make([]float64, ac)
 				rowb := make([]float64, bc)
 				for r := 0; r < ar; r++ {
-					a.Row(r, rowa)
-					b.Row(r, rowb)
-					for i, v := range rowb {
+					a.Row(rowa, r)
+					for i, v := range b.Row(rowb, r) {
 						rowa[i] -= v
 					}
 					copy(m.mat.Data[r*m.mat.Stride:r*m.mat.Stride+m.mat.Cols], rowa)
@@ -488,9 +534,8 @@ func (m *Float64) Sub(a, b Matrix) {
 				cola := make([]float64, ar)
 				colb := make([]float64, br)
 				for c := 0; c < ac; c++ {
-					a.Col(c, cola)
-					b.Col(c, colb)
-					for i, v := range colb {
+					a.Col(cola, c)
+					for i, v := range b.Col(colb, c) {
 						cola[i] -= v
 					}
 					copy(m.mat.Data[c*m.mat.Stride:c*m.mat.Stride+m.mat.Rows], cola)
@@ -569,9 +614,8 @@ func (m *Float64) MulElem(a, b Matrix) {
 				rowa := make([]float64, ac)
 				rowb := make([]float64, bc)
 				for r := 0; r < ar; r++ {
-					a.Row(r, rowa)
-					b.Row(r, rowb)
-					for i, v := range rowb {
+					a.Row(rowa, r)
+					for i, v := range b.Row(rowb, r) {
 						rowa[i] *= v
 					}
 					copy(m.mat.Data[r*m.mat.Stride:r*m.mat.Stride+m.mat.Cols], rowa)
@@ -580,9 +624,8 @@ func (m *Float64) MulElem(a, b Matrix) {
 				cola := make([]float64, ar)
 				colb := make([]float64, br)
 				for c := 0; c < ac; c++ {
-					a.Col(c, cola)
-					b.Col(c, colb)
-					for i, v := range colb {
+					a.Col(cola, c)
+					for i, v := range b.Col(colb, c) {
 						cola[i] *= v
 					}
 					copy(m.mat.Data[c*m.mat.Stride:c*m.mat.Stride+m.mat.Rows], cola)
@@ -640,14 +683,14 @@ func (m *Float64) Dot(b Matrix) float64 {
 		case blas.RowMajor:
 			row := make([]float64, bc)
 			for r := 0; r < br; r++ {
-				for i, v := range b.Row(r, row) {
+				for i, v := range b.Row(row, r) {
 					d += m.mat.Data[r*m.mat.Stride+i] * v
 				}
 			}
 		case blas.ColMajor:
 			col := make([]float64, br)
 			for c := 0; c < bc; c++ {
-				for i, v := range b.Col(c, col) {
+				for i, v := range b.Col(col, c) {
 					d += m.mat.Data[c*m.mat.Stride+i] * v
 				}
 			}
@@ -725,9 +768,9 @@ func (m *Float64) Mul(a, b Matrix) {
 				for c := 0; c < bc; c++ {
 					switch blasOrder {
 					case blas.RowMajor:
-						w.mat.Data[r*w.mat.Stride+w.mat.Cols] = blasEngine.Ddot(ac, a.Row(r, row), 1, b.Col(c, col), 1)
+						w.mat.Data[r*w.mat.Stride+w.mat.Cols] = blasEngine.Ddot(ac, a.Row(row, r), 1, b.Col(col, c), 1)
 					case blas.ColMajor:
-						w.mat.Data[c*w.mat.Stride+w.mat.Rows] = blasEngine.Ddot(ac, a.Row(r, row), 1, b.Col(c, col), 1)
+						w.mat.Data[c*w.mat.Stride+w.mat.Rows] = blasEngine.Ddot(ac, a.Row(row, r), 1, b.Col(col, c), 1)
 					default:
 						panic(ErrIllegalOrder)
 					}
@@ -812,8 +855,7 @@ func (m *Float64) Scale(f float64, a Matrix) {
 		case blas.RowMajor:
 			row := make([]float64, ac)
 			for r := 0; r < ar; r++ {
-				a.Row(r, row)
-				for i, v := range row {
+				for i, v := range a.Row(row, r) {
 					row[i] = f * v
 				}
 				copy(m.mat.Data[r*m.mat.Stride:r*m.mat.Stride+m.mat.Cols], row)
@@ -821,8 +863,7 @@ func (m *Float64) Scale(f float64, a Matrix) {
 		case blas.ColMajor:
 			col := make([]float64, ar)
 			for c := 0; c < ac; c++ {
-				a.Col(c, col)
-				for i, v := range col {
+				for i, v := range a.Col(col, c) {
 					col[i] = f * v
 				}
 				copy(m.mat.Data[c*m.mat.Stride:c*m.mat.Stride+m.mat.Rows], col)
@@ -896,8 +937,7 @@ func (m *Float64) Apply(f ApplyFunc, a Matrix) {
 		case blas.RowMajor:
 			row := make([]float64, ac)
 			for r := 0; r < ar; r++ {
-				a.Row(r, row)
-				for i, v := range row {
+				for i, v := range a.Row(row, r) {
 					row[i] = f(r, i, v)
 				}
 				copy(m.mat.Data[r*m.mat.Stride:r*m.mat.Stride+m.mat.Cols], row)
@@ -905,8 +945,7 @@ func (m *Float64) Apply(f ApplyFunc, a Matrix) {
 		case blas.ColMajor:
 			col := make([]float64, ar)
 			for c := 0; c < ac; c++ {
-				a.Col(c, col)
-				for i, v := range col {
+				for i, v := range a.Col(col, c) {
 					col[i] = f(i, c, v)
 				}
 				copy(m.mat.Data[c*m.mat.Stride:c*m.mat.Stride+m.mat.Rows], col)
@@ -1019,8 +1058,7 @@ func (m *Float64) Equals(b Matrix) bool {
 			rowb := make([]float64, bc)
 			for r := 0; r < br; r++ {
 				rowm := m.mat.Data[r*m.mat.Stride : r*m.mat.Stride+m.mat.Cols]
-				b.Row(r, rowb)
-				for i, v := range rowb {
+				for i, v := range b.Row(rowb, r) {
 					if rowm[i] != v {
 						return false
 					}
@@ -1030,8 +1068,7 @@ func (m *Float64) Equals(b Matrix) bool {
 			colb := make([]float64, br)
 			for c := 0; c < bc; c++ {
 				colm := m.mat.Data[c*m.mat.Stride : c*m.mat.Stride+m.mat.Rows]
-				b.Col(c, colb)
-				for i, v := range colb {
+				for i, v := range b.Col(colb, c) {
 					if colm[i] != v {
 						return false
 					}
@@ -1085,8 +1122,7 @@ func (m *Float64) EqualsApprox(b Matrix, epsilon float64) bool {
 			rowb := make([]float64, bc)
 			for r := 0; r < br; r++ {
 				rowm := m.mat.Data[r*m.mat.Stride : r*m.mat.Stride+m.mat.Cols]
-				b.Row(r, rowb)
-				for i, v := range rowb {
+				for i, v := range b.Row(rowb, r) {
 					if math.Abs(rowm[i]-v) > epsilon {
 						return false
 					}
@@ -1096,8 +1132,7 @@ func (m *Float64) EqualsApprox(b Matrix, epsilon float64) bool {
 			colb := make([]float64, br)
 			for c := 0; c < bc; c++ {
 				colm := m.mat.Data[c*m.mat.Stride : c*m.mat.Stride+m.mat.Rows]
-				b.Col(c, colb)
-				for i, v := range colb {
+				for i, v := range b.Col(colb, c) {
 					if math.Abs(colm[i]-v) > epsilon {
 						return false
 					}

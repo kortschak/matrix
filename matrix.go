@@ -36,32 +36,42 @@ type Mutable interface {
 // A Vectorer can return rows and columns of the represented matrix.
 type Vectorer interface {
 	// Row returns a slice of float64 for the row specified. It will panic if the index
-	// is out of bounds. If the call requires a copy and row is long enough to hold the row
-	// it will be used and returned.
-	Row(r int, row []float64) []float64
+	// is out of bounds. If the call requires a copy and row is not nil the row it will
+	// be used and returned, if it is not nil the number of elements copied will be the
+	// minimum of the length of the slice and the number of columns in the matrix.
+	Row(row []float64, r int) []float64
 
 	// Col returns a slice of float64 for the column specified. It will panic if the index
-	// is out of bounds. If the call requires a copy and col is long enough to hold the column
-	// it will be used and returned.
-	Col(c int, col []float64) []float64
+	// is out of bounds. If the call requires a copy and col is not nil the column it will
+	// be used and returned, if it is not nil the number of elements copied will be the
+	// minimum of the length of the slice and the number of rows in the matrix.
+	Col(col []float64, c int) []float64
 }
 
 // A VectorSetter can set rows and columns in the represented matrix.
 type VectorSetter interface {
 	// SetRow sets the values of the specified row to the values held in a slice of float64.
-	// It will panic if the index is out of bounds or the row length is not the same as the row
-	// dimension of the matrix. The row slice must be reusable after the call.
-	SetRow(r int, row []float64)
+	// The number of elements copied is returned and will be the minimum of the length of
+	// the slice and the number of columns in the matrix.
+	SetRow(r int, row []float64) int
 
 	// SetCol sets the values of the specified column to the values held in a slice of float64.
-	// It will panic if the index is out of bounds or the column length is not the same as the
-	// column dimension of the matrix. The column slice must be reusable after the call.
-	SetCol(c int, col []float64)
+	// The number of elements copied is returned and will be the minimum of the length of
+	// the slice and the number of rows in the matrix.
+	SetCol(c int, col []float64) int
 }
 
-// A Cloner can make a copy of the elements of a into the receiver.
+// A Cloner can make a copy of a into the receiver, destroying the previous value. The clone
+// operation does not make any restriction on shape.
 type Cloner interface {
 	Clone(a Matrix)
+}
+
+// A Copier can make a copy of elements of a into the receiver. The copy operation fills the
+// submatrix in m with the values from the submatrix of a with the dimensions equal to the
+// minumum of two two matrices.
+type Copier interface {
+	Copy(a Matrix)
 }
 
 // A Viewer can extract a submatrix view of of the receiver, starting at row i, column j

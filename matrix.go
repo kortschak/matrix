@@ -51,13 +51,15 @@ type Vectorer interface {
 // A VectorSetter can set rows and columns in the represented matrix.
 type VectorSetter interface {
 	// SetRow sets the values of the specified row to the values held in a slice of float64.
-	// The number of elements copied is returned and will be the minimum of the length of
-	// the slice and the number of columns in the matrix.
+	// It will panic if the index is out of bounds. The number of elements copied is
+	// returned and will be the minimum of the length of the slice and the number of columns
+	// in the matrix.
 	SetRow(r int, row []float64) int
 
 	// SetCol sets the values of the specified column to the values held in a slice of float64.
-	// The number of elements copied is returned and will be the minimum of the length of
-	// the slice and the number of rows in the matrix.
+	// It will panic if the index is out of bounds. The number of elements copied is
+	// returned and will be the minimum of the length of the slice and the number of rows
+	// in the matrix.
 	SetCol(c int, col []float64) int
 }
 

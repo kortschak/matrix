@@ -242,16 +242,17 @@ func (m *Dense) Clone(a Matrix) {
 	}
 	data := make([]float64, r*c)
 	switch a := a.(type) {
-	case *Dense:
+	case Blasser:
+		amat := a.BlasMatrix()
 		switch blasOrder {
 		case blas.RowMajor:
 			for i := 0; i < r; i++ {
-				copy(data[i*c:(i+1)*c], a.mat.Data[i*a.mat.Stride:i*a.mat.Stride+c])
+				copy(data[i*c:(i+1)*c], amat.Data[i*amat.Stride:i*amat.Stride+c])
 			}
 			m.mat.Stride = c
 		case blas.ColMajor:
 			for i := 0; i < c; i++ {
-				copy(data[i*r:(i+1)*r], a.mat.Data[i*a.mat.Stride:i*a.mat.Stride+r])
+				copy(data[i*r:(i+1)*r], amat.Data[i*amat.Stride:i*amat.Stride+r])
 			}
 			m.mat.Stride = r
 		default:
@@ -290,15 +291,16 @@ func (m *Dense) Copy(a Matrix) {
 	c = min(c, m.mat.Cols)
 
 	switch a := a.(type) {
-	case *Dense:
+	case Blasser:
+		amat := a.BlasMatrix()
 		switch blasOrder {
 		case blas.RowMajor:
 			for i := 0; i < r; i++ {
-				copy(m.mat.Data[i*m.mat.Stride:i*m.mat.Stride+c], a.mat.Data[i*a.mat.Stride:i*a.mat.Stride+c])
+				copy(m.mat.Data[i*m.mat.Stride:i*m.mat.Stride+c], amat.Data[i*amat.Stride:i*amat.Stride+c])
 			}
 		case blas.ColMajor:
 			for i := 0; i < c; i++ {
-				copy(m.mat.Data[i*m.mat.Stride:i*m.mat.Stride+r], a.mat.Data[i*a.mat.Stride:i*a.mat.Stride+r])
+				copy(m.mat.Data[i*m.mat.Stride:i*m.mat.Stride+r], amat.Data[i*amat.Stride:i*amat.Stride+r])
 			}
 		default:
 			panic(ErrIllegalOrder)
@@ -412,14 +414,15 @@ func (m *Dense) Add(a, b Matrix) {
 	}
 
 	// This is the fast path; both are really BlasMatrix types.
-	if a, ok := a.(*Dense); ok {
-		if b, ok := b.(*Dense); ok {
-			if a.mat.Order != blasOrder || b.mat.Order != blasOrder {
+	if a, ok := a.(Blasser); ok {
+		if b, ok := b.(Blasser); ok {
+			amat, bmat := a.BlasMatrix(), b.BlasMatrix()
+			if amat.Order != blasOrder || bmat.Order != blasOrder {
 				panic(ErrIllegalOrder)
 			}
-			for ja, jb, jm := 0, 0, 0; ja < k*a.mat.Stride; ja, jb, jm = ja+a.mat.Stride, jb+b.mat.Stride, jm+m.mat.Stride {
-				for i, v := range a.mat.Data[ja : ja+l] {
-					m.mat.Data[i+jm] = v + b.mat.Data[i+jb]
+			for ja, jb, jm := 0, 0, 0; ja < k*amat.Stride; ja, jb, jm = ja+amat.Stride, jb+bmat.Stride, jm+m.mat.Stride {
+				for i, v := range amat.Data[ja : ja+l] {
+					m.mat.Data[i+jm] = v + bmat.Data[i+jb]
 				}
 			}
 			return
@@ -502,14 +505,15 @@ func (m *Dense) Sub(a, b Matrix) {
 	}
 
 	// This is the fast path; both are really BlasMatrix types.
-	if a, ok := a.(*Dense); ok {
-		if b, ok := b.(*Dense); ok {
-			if a.mat.Order != blasOrder || b.mat.Order != blasOrder {
+	if a, ok := a.(Blasser); ok {
+		if b, ok := b.(Blasser); ok {
+			amat, bmat := a.BlasMatrix(), b.BlasMatrix()
+			if amat.Order != blasOrder || bmat.Order != blasOrder {
 				panic(ErrIllegalOrder)
 			}
-			for ja, jb, jm := 0, 0, 0; ja < k*a.mat.Stride; ja, jb, jm = ja+a.mat.Stride, jb+b.mat.Stride, jm+m.mat.Stride {
-				for i, v := range a.mat.Data[ja : ja+l] {
-					m.mat.Data[i+jm] = v - b.mat.Data[i+jb]
+			for ja, jb, jm := 0, 0, 0; ja < k*amat.Stride; ja, jb, jm = ja+amat.Stride, jb+bmat.Stride, jm+m.mat.Stride {
+				for i, v := range amat.Data[ja : ja+l] {
+					m.mat.Data[i+jm] = v - bmat.Data[i+jb]
 				}
 			}
 			return
@@ -592,14 +596,15 @@ func (m *Dense) MulElem(a, b Matrix) {
 	}
 
 	// This is the fast path; both are really BlasMatrix types.
-	if a, ok := a.(*Dense); ok {
-		if b, ok := b.(*Dense); ok {
-			if a.mat.Order != blasOrder || b.mat.Order != blasOrder {
+	if a, ok := a.(Blasser); ok {
+		if b, ok := b.(Blasser); ok {
+			amat, bmat := a.BlasMatrix(), b.BlasMatrix()
+			if amat.Order != blasOrder || bmat.Order != blasOrder {
 				panic(ErrIllegalOrder)
 			}
-			for ja, jb, jm := 0, 0, 0; ja < k*a.mat.Stride; ja, jb, jm = ja+a.mat.Stride, jb+b.mat.Stride, jm+m.mat.Stride {
-				for i, v := range a.mat.Data[ja : ja+l] {
-					m.mat.Data[i+jm] = v * b.mat.Data[i+jb]
+			for ja, jb, jm := 0, 0, 0; ja < k*amat.Stride; ja, jb, jm = ja+amat.Stride, jb+bmat.Stride, jm+m.mat.Stride {
+				for i, v := range amat.Data[ja : ja+l] {
+					m.mat.Data[i+jm] = v * bmat.Data[i+jb]
 				}
 			}
 			return
@@ -665,13 +670,14 @@ func (m *Dense) Dot(b Matrix) float64 {
 	var d float64
 
 	// This is the fast path; both are really BlasMatrix types.
-	if b, ok := b.(*Dense); ok {
-		if m.mat.Order != blasOrder || b.mat.Order != blasOrder {
+	if b, ok := b.(Blasser); ok {
+		bmat := b.BlasMatrix()
+		if m.mat.Order != blasOrder || bmat.Order != blasOrder {
 			panic(ErrIllegalOrder)
 		}
-		for jm, jb := 0, 0; jm < k*m.mat.Stride; jm, jb = jm+m.mat.Stride, jb+b.mat.Stride {
+		for jm, jb := 0, 0; jm < k*m.mat.Stride; jm, jb = jm+m.mat.Stride, jb+bmat.Stride {
 			for i, v := range m.mat.Data[jm : jm+l] {
-				d += v * b.mat.Data[i+jb]
+				d += v * bmat.Data[i+jb]
 			}
 		}
 		return d
@@ -740,9 +746,10 @@ func (m *Dense) Mul(a, b Matrix) {
 	}
 
 	// This is the fast path; both are really BlasMatrix types.
-	if a, ok := a.(*Dense); ok {
-		if b, ok := b.(*Dense); ok {
-			if a.mat.Order != blasOrder || b.mat.Order != blasOrder {
+	if a, ok := a.(Blasser); ok {
+		if b, ok := b.(Blasser); ok {
+			amat, bmat := a.BlasMatrix(), b.BlasMatrix()
+			if amat.Order != blasOrder || bmat.Order != blasOrder {
 				panic(ErrIllegalOrder)
 			}
 			blasEngine.Dgemm(
@@ -750,8 +757,8 @@ func (m *Dense) Mul(a, b Matrix) {
 				blas.NoTrans, blas.NoTrans,
 				ar, bc, ac,
 				1.,
-				a.mat.Data, a.mat.Stride,
-				b.mat.Data, b.mat.Stride,
+				amat.Data, amat.Stride,
+				bmat.Data, bmat.Stride,
 				0.,
 				w.mat.Data, w.mat.Stride)
 			*m = w
@@ -837,12 +844,13 @@ func (m *Dense) Scale(f float64, a Matrix) {
 		}
 	}
 
-	if a, ok := a.(*Dense); ok {
-		if a.mat.Order != blasOrder {
+	if a, ok := a.(Blasser); ok {
+		amat := a.BlasMatrix()
+		if amat.Order != blasOrder {
 			panic(ErrIllegalOrder)
 		}
-		for ja, jm := 0, 0; ja < k*a.mat.Stride; ja, jm = ja+a.mat.Stride, jm+m.mat.Stride {
-			for i, v := range a.mat.Data[ja : ja+l] {
+		for ja, jm := 0, 0; ja < k*amat.Stride; ja, jm = ja+amat.Stride, jm+m.mat.Stride {
+			for i, v := range amat.Data[ja : ja+l] {
 				m.mat.Data[i+jm] = v * f
 			}
 		}
@@ -913,13 +921,14 @@ func (m *Dense) Apply(f ApplyFunc, a Matrix) {
 		}
 	}
 
-	if a, ok := a.(*Dense); ok {
-		if a.mat.Order != blasOrder {
+	if a, ok := a.(Blasser); ok {
+		amat := a.BlasMatrix()
+		if amat.Order != blasOrder {
 			panic(ErrIllegalOrder)
 		}
 		var r, c int
-		for j, ja, jm := 0, 0, 0; ja < k*a.mat.Stride; j, ja, jm = j+1, ja+a.mat.Stride, jm+m.mat.Stride {
-			for i, v := range a.mat.Data[ja : ja+l] {
+		for j, ja, jm := 0, 0, 0; ja < k*amat.Stride; j, ja, jm = j+1, ja+amat.Stride, jm+m.mat.Stride {
+			for i, v := range amat.Data[ja : ja+l] {
 				if blasOrder == blas.RowMajor {
 					r, c = i, j
 				} else {
@@ -1032,7 +1041,7 @@ func (m *Dense) Equals(b Matrix) bool {
 		return false
 	}
 
-	if b, ok := b.(*Dense); ok {
+	if b, ok := b.(Blasser); ok {
 		var k, l int
 		switch blasOrder {
 		case blas.RowMajor:
@@ -1042,9 +1051,10 @@ func (m *Dense) Equals(b Matrix) bool {
 		default:
 			panic(ErrIllegalOrder)
 		}
-		for jb, jm := 0, 0; jm < k*m.mat.Stride; jb, jm = jb+b.mat.Stride, jm+m.mat.Stride {
+		bmat := b.BlasMatrix()
+		for jb, jm := 0, 0; jm < k*m.mat.Stride; jb, jm = jb+bmat.Stride, jm+m.mat.Stride {
 			for i, v := range m.mat.Data[jm : jm+l] {
-				if v != b.mat.Data[i+jb] {
+				if v != bmat.Data[i+jb] {
 					return false
 				}
 			}
@@ -1096,7 +1106,7 @@ func (m *Dense) EqualsApprox(b Matrix, epsilon float64) bool {
 		return false
 	}
 
-	if b, ok := b.(*Dense); ok {
+	if b, ok := b.(Blasser); ok {
 		var k, l int
 		switch blasOrder {
 		case blas.RowMajor:
@@ -1106,9 +1116,10 @@ func (m *Dense) EqualsApprox(b Matrix, epsilon float64) bool {
 		default:
 			panic(ErrIllegalOrder)
 		}
-		for jb, jm := 0, 0; jm < k*m.mat.Stride; jb, jm = jb+b.mat.Stride, jm+m.mat.Stride {
+		bmat := b.BlasMatrix()
+		for jb, jm := 0, 0; jm < k*m.mat.Stride; jb, jm = jb+bmat.Stride, jm+m.mat.Stride {
 			for i, v := range m.mat.Data[jm : jm+l] {
-				if math.Abs(v-b.mat.Data[i+jb]) > epsilon {
+				if math.Abs(v-bmat.Data[i+jb]) > epsilon {
 					return false
 				}
 			}

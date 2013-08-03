@@ -81,7 +81,7 @@ type Copier interface {
 // the bounds of the matrix View will panic with ErrIndexOutOfRange. Changes in the
 // elements of the submatrix must be reflected in the original and vice versa.
 type Viewer interface {
-	View(i, j, r, c int) Matrix
+	View(i, j, r, c int) Blasser
 }
 
 // A Submatrixer can extract a submatrix from a into the receiver, starting at row i, column j

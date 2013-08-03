@@ -210,7 +210,7 @@ func (m *Dense) SetRow(r int, v []float64) int {
 }
 
 // View returns a view on the receiver.
-func (m *Dense) View(i, j, r, c int) Matrix {
+func (m *Dense) View(i, j, r, c int) Blasser {
 	v := Dense{BlasMatrix{
 		Order:  m.mat.Order,
 		Rows:   r - i,
@@ -230,7 +230,7 @@ func (m *Dense) View(i, j, r, c int) Matrix {
 
 func (m *Dense) Submatrix(a Matrix, i, j, r, c int) {
 	// This is probably a bad idea, but for the moment, we do it.
-	m.Clone(m.View(i, j, r, c))
+	m.Clone(&Dense{m.View(i, j, r, c).BlasMatrix()})
 }
 
 func (m *Dense) Clone(a Matrix) {

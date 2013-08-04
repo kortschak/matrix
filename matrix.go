@@ -36,15 +36,15 @@ type Mutable interface {
 // A Vectorer can return rows and columns of the represented matrix.
 type Vectorer interface {
 	// Row returns a slice of float64 for the row specified. It will panic if the index
-	// is out of bounds. If the call requires a copy and row is not nil the row it will
-	// be used and returned, if it is not nil the number of elements copied will be the
-	// minimum of the length of the slice and the number of columns in the matrix.
+	// is out of bounds. If the call requires a copy and row is not nil it will be used and
+	// returned, if it is not nil the number of elements copied will be the minimum of the
+	// length of the slice and the number of columns in the matrix.
 	Row(row []float64, r int) []float64
 
 	// Col returns a slice of float64 for the column specified. It will panic if the index
-	// is out of bounds. If the call requires a copy and col is not nil the column it will
-	// be used and returned, if it is not nil the number of elements copied will be the
-	// minimum of the length of the slice and the number of rows in the matrix.
+	// is out of bounds. If the call requires a copy and col is not nil it will be used and
+	// returned, if it is not nil the number of elements copied will be the minimum of the
+	// length of the slice and the number of rows in the matrix.
 	Col(col []float64, c int) []float64
 }
 

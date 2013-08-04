@@ -48,8 +48,8 @@ var (
 	_ Normer = matrix
 	_ Sumer  = matrix
 
-	// _ Uer = matrix
-	// _ Ler = matrix
+	_ Uer = matrix
+	_ Ler = matrix
 
 	// _ Stacker   = matrix
 	// _ Augmenter = matrix
@@ -1049,6 +1049,203 @@ func (m *Dense) Apply(f ApplyFunc, a Matrix) {
 		for c := 0; c < ac; c++ {
 			m.Set(r, c, f(r, c, a.At(r, c)))
 		}
+	}
+}
+
+func zero(f []float64) {
+	f[0] = 0
+	for i := 1; i < len(f); {
+		i += copy(f[i:], f[:i])
+	}
+}
+
+func (m *Dense) U(a Matrix) {
+	ar, ac := a.Dims()
+	if ar != ac {
+		panic(ErrSquare)
+	}
+
+	var k, l int
+	switch {
+	case m == a:
+		m.zeroLower()
+		return
+	case m.isZero():
+		m.mat = BlasMatrix{
+			Order: blasOrder,
+			Rows:  ar,
+			Cols:  ac,
+			Data:  realloc(m.mat.Data, ar*ac),
+		}
+		switch blasOrder {
+		case blas.RowMajor:
+			m.mat.Stride, k, l = ac, ar, ac
+		case blas.ColMajor:
+			m.mat.Stride, k, l = ar, ac, ar
+		default:
+			panic(ErrIllegalOrder)
+		}
+	case ar != m.mat.Rows || ac != m.mat.Cols:
+		panic(ErrShape)
+	default:
+		switch blasOrder {
+		case blas.RowMajor:
+			k, l = ar, ac
+		case blas.ColMajor:
+			k, l = ac, ar
+		default:
+			panic(ErrIllegalOrder)
+		}
+	}
+
+	if a, ok := a.(Blasser); ok {
+		amat := a.BlasMatrix()
+		if amat.Order != blasOrder {
+			panic(ErrIllegalOrder)
+		}
+		for j, ja, jm := 0, 0, 0; ja < k*amat.Stride; j, ja, jm = j+1, ja+amat.Stride, jm+m.mat.Stride {
+			zero(m.mat.Data[jm : jm+j])
+			copy(m.mat.Data[jm+j:jm+l], amat.Data[ja+j:ja+l])
+		}
+		return
+	}
+
+	if a, ok := a.(Vectorer); ok {
+		switch blasOrder {
+		case blas.RowMajor:
+			row := make([]float64, ac)
+			for r := 0; r < ar; r++ {
+				a.Row(row, r)
+				zero(m.mat.Data[r*m.mat.Stride : r*(m.mat.Stride+1)])
+				copy(m.mat.Data[r*(m.mat.Stride+1):r*m.mat.Stride+m.mat.Cols], row)
+			}
+		case blas.ColMajor:
+			col := make([]float64, ar)
+			for c := 0; c < ac; c++ {
+				a.Col(col[:c+1], c)
+				m.SetCol(c, col)
+			}
+		default:
+			panic(ErrIllegalOrder)
+		}
+		return
+	}
+
+	m.zeroLower()
+	for r := 0; r < ar; r++ {
+		for c := r; c < ac; c++ {
+			m.Set(r, c, a.At(r, c))
+		}
+	}
+}
+
+func (m *Dense) zeroLower() {
+	switch blasOrder {
+	case blas.RowMajor:
+		for i := 1; i < m.mat.Rows; i++ {
+			zero(m.mat.Data[i*m.mat.Stride : i*m.mat.Stride+i])
+		}
+	case blas.ColMajor:
+		for i := 0; i < m.mat.Cols-1; i++ {
+			zero(m.mat.Data[i*m.mat.Stride+i+1 : (i+1)*m.mat.Stride])
+		}
+	default:
+		panic(ErrIllegalOrder)
+	}
+}
+
+func (m *Dense) L(a Matrix) {
+	ar, ac := a.Dims()
+	if ar != ac {
+		panic(ErrSquare)
+	}
+
+	var k, l int
+	switch {
+	case m == a:
+		m.zeroUpper()
+		return
+	case m.isZero():
+		m.mat = BlasMatrix{
+			Order: blasOrder,
+			Rows:  ar,
+			Cols:  ac,
+			Data:  realloc(m.mat.Data, ar*ac),
+		}
+		switch blasOrder {
+		case blas.RowMajor:
+			m.mat.Stride, k, l = ac, ar, ac
+		case blas.ColMajor:
+			m.mat.Stride, k, l = ar, ac, ar
+		default:
+			panic(ErrIllegalOrder)
+		}
+	case ar != m.mat.Rows || ac != m.mat.Cols:
+		panic(ErrShape)
+	default:
+		switch blasOrder {
+		case blas.RowMajor:
+			k, l = ac, ar
+		case blas.ColMajor:
+			k, l = ar, ac
+		default:
+			panic(ErrIllegalOrder)
+		}
+	}
+
+	if a, ok := a.(Blasser); ok {
+		amat := a.BlasMatrix()
+		if amat.Order != blasOrder {
+			panic(ErrIllegalOrder)
+		}
+		for j, ja, jm := 0, 0, 0; ja < k*amat.Stride; j, ja, jm = j+1, ja+amat.Stride, jm+m.mat.Stride {
+			zero(m.mat.Data[jm : jm+j])
+			copy(m.mat.Data[jm+j:jm+l], amat.Data[ja+j:ja+l])
+		}
+		return
+	}
+
+	if a, ok := a.(Vectorer); ok {
+		switch blasOrder {
+		case blas.RowMajor:
+			row := make([]float64, ac)
+			for r := 0; r < ar; r++ {
+				a.Row(row[:r+1], r)
+				m.SetRow(r, row)
+			}
+		case blas.ColMajor:
+			col := make([]float64, ar)
+			for c := 0; c < ac; c++ {
+				a.Col(col, c)
+				zero(m.mat.Data[c*m.mat.Stride : c*(m.mat.Stride+1)])
+				copy(m.mat.Data[c*(m.mat.Stride+1):c*m.mat.Stride+m.mat.Rows], col)
+			}
+		default:
+			panic(ErrIllegalOrder)
+		}
+		return
+	}
+
+	m.zeroUpper()
+	for c := 0; c < ac; c++ {
+		for r := c; r < ar; r++ {
+			m.Set(r, c, a.At(r, c))
+		}
+	}
+}
+
+func (m *Dense) zeroUpper() {
+	switch blasOrder {
+	case blas.RowMajor:
+		for i := 1; i < m.mat.Rows; i++ {
+			zero(m.mat.Data[i*m.mat.Stride+i+1 : (i+1)*m.mat.Stride])
+		}
+	case blas.ColMajor:
+		for i := 0; i < m.mat.Cols-1; i++ {
+			zero(m.mat.Data[i*m.mat.Stride : i*m.mat.Stride+i])
+		}
+	default:
+		panic(ErrIllegalOrder)
 	}
 }
 

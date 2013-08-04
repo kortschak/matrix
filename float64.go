@@ -45,8 +45,8 @@ var (
 	// _ Deter  = matrix
 	// _ Inver  = matrix
 	_ Tracer = matrix
-	// _ Normer = matrix
-	_ Sumer = matrix
+	_ Normer = matrix
+	_ Sumer  = matrix
 
 	// _ Uer = matrix
 	// _ Ler = matrix
@@ -374,6 +374,86 @@ func (m *Dense) Trace() float64 {
 		t += m.mat.Data[i]
 	}
 	return t
+}
+
+// Norm returns a variety of norms for the matrix.
+//
+// Valid ord values are:
+//
+// 	   1 - max of the sum of the absolute values of columns
+// 	  -1 - min of the sum of the absolute values of columns
+// 	 Inf - max of the sum of the absolute values of rows
+// 	-Inf - min of the sum of the absolute values of rows
+// 	 Fro - Frobenius norm (0 is an alias to this)
+//
+// Norm will panic with ErrNormOrder if an illegal norm order is specified.
+func (m *Dense) Norm(ord int) float64 {
+	var n float64
+	if ord == 0 {
+		ord = Fro
+	}
+	switch ord {
+	case 2, -2:
+		panic("not implemented - feel free to port an svd function to matrix")
+	case 1:
+		col := make([]float64, m.mat.Rows)
+		for i := 0; i < m.mat.Cols; i++ {
+			var s float64
+			for _, e := range m.Col(col, i) {
+				s += e
+			}
+			n = math.Max(math.Abs(s), n)
+		}
+	case Inf:
+		row := make([]float64, m.mat.Cols)
+		for i := 0; i < m.mat.Rows; i++ {
+			var s float64
+			for _, e := range m.Row(row, i) {
+				s += e
+			}
+			n = math.Max(math.Abs(s), n)
+		}
+	case -1:
+		n = math.MaxFloat64
+		col := make([]float64, m.mat.Rows)
+		for i := 0; i < m.mat.Cols; i++ {
+			var s float64
+			for _, e := range m.Col(col, i) {
+				s += e
+			}
+			n = math.Min(math.Abs(s), n)
+		}
+	case -Inf:
+		n = math.MaxFloat64
+		row := make([]float64, m.mat.Cols)
+		for i := 0; i < m.mat.Rows; i++ {
+			var s float64
+			for _, e := range m.Row(row, i) {
+				s += e
+			}
+			n = math.Min(math.Abs(s), n)
+		}
+	case Fro:
+		var l int
+		switch blasOrder {
+		case blas.RowMajor:
+			l = m.mat.Cols
+		case blas.ColMajor:
+			l = m.mat.Rows
+		default:
+			panic(ErrIllegalOrder)
+		}
+		for i := 0; i < len(m.mat.Data); i += m.mat.Stride {
+			for _, v := range m.mat.Data[i : i+l] {
+				n += v * v
+			}
+		}
+		return math.Sqrt(n)
+	default:
+		panic(ErrNormOrder)
+	}
+
+	return n
 }
 
 func (m *Dense) Add(a, b Matrix) {

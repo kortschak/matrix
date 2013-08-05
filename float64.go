@@ -391,10 +391,8 @@ var inf = math.Inf(1)
 // Norm will panic with ErrNormOrder if an illegal norm order is specified.
 func (m *Dense) Norm(ord float64) float64 {
 	var n float64
-	switch ord {
-	case 2, -2:
-		panic("matrix: 2-norm not implemented (pull requests for svd implementation welcomed)")
-	case 1:
+	switch {
+	case ord == 1:
 		col := make([]float64, m.mat.Rows)
 		for i := 0; i < m.mat.Cols; i++ {
 			var s float64
@@ -403,7 +401,7 @@ func (m *Dense) Norm(ord float64) float64 {
 			}
 			n = math.Max(math.Abs(s), n)
 		}
-	case inf:
+	case math.IsInf(ord, +1):
 		row := make([]float64, m.mat.Cols)
 		for i := 0; i < m.mat.Rows; i++ {
 			var s float64
@@ -412,7 +410,7 @@ func (m *Dense) Norm(ord float64) float64 {
 			}
 			n = math.Max(math.Abs(s), n)
 		}
-	case -1:
+	case ord == -1:
 		n = math.MaxFloat64
 		col := make([]float64, m.mat.Rows)
 		for i := 0; i < m.mat.Cols; i++ {
@@ -422,7 +420,7 @@ func (m *Dense) Norm(ord float64) float64 {
 			}
 			n = math.Min(math.Abs(s), n)
 		}
-	case -inf:
+	case math.IsInf(ord, -1):
 		n = math.MaxFloat64
 		row := make([]float64, m.mat.Cols)
 		for i := 0; i < m.mat.Rows; i++ {
@@ -432,7 +430,7 @@ func (m *Dense) Norm(ord float64) float64 {
 			}
 			n = math.Min(math.Abs(s), n)
 		}
-	case 0:
+	case ord == 0:
 		var l int
 		switch blasOrder {
 		case blas.RowMajor:
@@ -448,6 +446,8 @@ func (m *Dense) Norm(ord float64) float64 {
 			}
 		}
 		return math.Sqrt(n)
+	case ord == 2, ord == -2:
+		panic("matrix: 2-norm not implemented (pull requests for svd implementation welcomed)")
 	default:
 		panic(ErrNormOrder)
 	}

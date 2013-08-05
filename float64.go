@@ -393,7 +393,7 @@ func (m *Dense) Norm(ord float64) float64 {
 	var n float64
 	switch ord {
 	case 2, -2:
-		panic("not implemented - feel free to port an svd function to matrix")
+		panic("matrix: 2-norm not implemented (pull requests for svd implementation welcomed)")
 	case 1:
 		col := make([]float64, m.mat.Rows)
 		for i := 0; i < m.mat.Cols; i++ {

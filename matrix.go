@@ -96,13 +96,8 @@ type Submatrixer interface {
 // A Normer returns the specified matrix norm, o of the matrix represented by the receiver.
 // A panic with ErrNormOrder should occur if o is not valid.
 type Normer interface {
-	Norm(o int) float64
+	Norm(o float64) float64
 }
-
-const (
-	Inf = int(^uint(0) >> 1)
-	Fro = -Inf - 1
-)
 
 // A Transposer can transpose the matrix represented by a, placing the elements into the receiver.
 type Transposer interface {

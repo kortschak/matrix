@@ -376,22 +376,21 @@ func (m *Dense) Trace() float64 {
 	return t
 }
 
+var inf = math.Inf(1)
+
 // Norm returns a variety of norms for the matrix.
 //
 // Valid ord values are:
 //
-// 	   1 - max of the sum of the absolute values of columns
-// 	  -1 - min of the sum of the absolute values of columns
-// 	 Inf - max of the sum of the absolute values of rows
-// 	-Inf - min of the sum of the absolute values of rows
-// 	 Fro - Frobenius norm (0 is an alias to this)
+//     1 - max of the sum of the absolute values of columns
+//    -1 - min of the sum of the absolute values of columns
+//   Inf - max of the sum of the absolute values of rows
+//  -Inf - min of the sum of the absolute values of rows
+//     0 - Frobenius norm
 //
 // Norm will panic with ErrNormOrder if an illegal norm order is specified.
-func (m *Dense) Norm(ord int) float64 {
+func (m *Dense) Norm(ord float64) float64 {
 	var n float64
-	if ord == 0 {
-		ord = Fro
-	}
 	switch ord {
 	case 2, -2:
 		panic("not implemented - feel free to port an svd function to matrix")
@@ -404,7 +403,7 @@ func (m *Dense) Norm(ord int) float64 {
 			}
 			n = math.Max(math.Abs(s), n)
 		}
-	case Inf:
+	case inf:
 		row := make([]float64, m.mat.Cols)
 		for i := 0; i < m.mat.Rows; i++ {
 			var s float64
@@ -423,7 +422,7 @@ func (m *Dense) Norm(ord int) float64 {
 			}
 			n = math.Min(math.Abs(s), n)
 		}
-	case -Inf:
+	case -inf:
 		n = math.MaxFloat64
 		row := make([]float64, m.mat.Cols)
 		for i := 0; i < m.mat.Rows; i++ {
@@ -433,7 +432,7 @@ func (m *Dense) Norm(ord int) float64 {
 			}
 			n = math.Min(math.Abs(s), n)
 		}
-	case Fro:
+	case 0:
 		var l int
 		switch blasOrder {
 		case blas.RowMajor:

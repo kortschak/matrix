@@ -41,6 +41,7 @@ var (
 	_ Applyer = matrix
 
 	_ Transposer = matrix
+	// _ TransposeViewer = matrix
 
 	// _ Deter  = matrix
 	// _ Inver  = matrix

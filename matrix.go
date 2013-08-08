@@ -104,10 +104,10 @@ type Transposer interface {
 	T(a Matrix)
 }
 
-// A TransposeViewer can create a transposed view matrix from the represented by a. Changes made to
-// the returned Matrix may be reflected in the original.
+// A TransposeViewer can create a transposed view matrix from the represented by the reciever.
+// Changes made to the returned Matrix may be reflected in the original.
 type TransposeViewer interface {
-	TView(a Matrix) Matrix
+	TView() Matrix
 }
 
 // A Deter can return the determinant of the represented matrix.

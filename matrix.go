@@ -104,7 +104,7 @@ type Transposer interface {
 	T(a Matrix)
 }
 
-// A TransposeViewer can create a transposed view matrix from the represented by the reciever.
+// A TransposeViewer can create a transposed view matrix from the represented by the receiver.
 // Changes made to the returned Matrix may be reflected in the original.
 type TransposeViewer interface {
 	TView() Matrix

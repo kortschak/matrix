@@ -493,7 +493,6 @@ func (m *Dense) Add(a, b Matrix) {
 		}
 	}
 
-	// This is the fast path; both are really BlasMatrix types.
 	if a, ok := a.(Blasser); ok {
 		if b, ok := b.(Blasser); ok {
 			amat, bmat := a.BlasMatrix(), b.BlasMatrix()
@@ -509,7 +508,6 @@ func (m *Dense) Add(a, b Matrix) {
 		}
 	}
 
-	// Progressively worse runtime cases... not all of them - there are four, margin width yadda yadda.
 	if a, ok := a.(Vectorer); ok {
 		if b, ok := b.(Vectorer); ok {
 			switch blasOrder {
@@ -584,7 +582,6 @@ func (m *Dense) Sub(a, b Matrix) {
 		}
 	}
 
-	// This is the fast path; both are really BlasMatrix types.
 	if a, ok := a.(Blasser); ok {
 		if b, ok := b.(Blasser); ok {
 			amat, bmat := a.BlasMatrix(), b.BlasMatrix()
@@ -600,7 +597,6 @@ func (m *Dense) Sub(a, b Matrix) {
 		}
 	}
 
-	// Progressively worse runtime cases... not all of them - there are four, margin width yadda yadda.
 	if a, ok := a.(Vectorer); ok {
 		if b, ok := b.(Vectorer); ok {
 			switch blasOrder {
@@ -675,7 +671,6 @@ func (m *Dense) MulElem(a, b Matrix) {
 		}
 	}
 
-	// This is the fast path; both are really BlasMatrix types.
 	if a, ok := a.(Blasser); ok {
 		if b, ok := b.(Blasser); ok {
 			amat, bmat := a.BlasMatrix(), b.BlasMatrix()
@@ -691,7 +686,6 @@ func (m *Dense) MulElem(a, b Matrix) {
 		}
 	}
 
-	// Progressively worse runtime cases... not all of them - there are four, margin width yadda yadda.
 	if a, ok := a.(Vectorer); ok {
 		if b, ok := b.(Vectorer); ok {
 			switch blasOrder {
@@ -749,7 +743,6 @@ func (m *Dense) Dot(b Matrix) float64 {
 
 	var d float64
 
-	// This is the fast path; both are really BlasMatrix types.
 	if b, ok := b.(Blasser); ok {
 		bmat := b.BlasMatrix()
 		if m.mat.Order != blasOrder || bmat.Order != blasOrder {
@@ -763,7 +756,6 @@ func (m *Dense) Dot(b Matrix) float64 {
 		return d
 	}
 
-	// Progressively worse runtime cases... not all of them - there are four, margin width yadda yadda.
 	if b, ok := b.(Vectorer); ok {
 		switch blasOrder {
 		case blas.RowMajor:
@@ -825,7 +817,6 @@ func (m *Dense) Mul(a, b Matrix) {
 		panic(ErrShape)
 	}
 
-	// This is the fast path; both are really BlasMatrix types.
 	if a, ok := a.(Blasser); ok {
 		if b, ok := b.(Blasser); ok {
 			amat, bmat := a.BlasMatrix(), b.BlasMatrix()
@@ -846,7 +837,6 @@ func (m *Dense) Mul(a, b Matrix) {
 		}
 	}
 
-	// Progressively worse runtime cases... not all of them - there are four, margin width yadda yadda.
 	if a, ok := a.(Vectorer); ok {
 		if b, ok := b.(Vectorer); ok {
 			row := make([]float64, ac)
@@ -936,7 +926,6 @@ func (m *Dense) Scale(f float64, a Matrix) {
 		return
 	}
 
-	// Progressively worse runtime cases... not all of them - there are four, margin width yadda yadda.
 	if a, ok := a.(Vectorer); ok {
 		switch blasOrder {
 		case blas.RowMajor:
@@ -1019,7 +1008,6 @@ func (m *Dense) Apply(f ApplyFunc, a Matrix) {
 		return
 	}
 
-	// Progressively worse runtime cases... not all of them - there are four, margin width yadda yadda.
 	if a, ok := a.(Vectorer); ok {
 		switch blasOrder {
 		case blas.RowMajor:

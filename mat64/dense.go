@@ -96,20 +96,6 @@ func (m *Dense) isZero() bool {
 	return m.mat.Cols == 0 || m.mat.Rows == 0
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func realloc(f []float64, l int) []float64 {
-	if l < cap(f) {
-		return f[:l]
-	}
-	return make([]float64, l)
-}
-
 func (m *Dense) At(r, c int) float64 {
 	switch m.mat.Order {
 	case blas.RowMajor:

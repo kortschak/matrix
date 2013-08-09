@@ -326,3 +326,17 @@ const (
 	ErrPivot           = Error("matrix: malformed pivot list")
 	ErrIllegalOrder    = Error("matrix: illegal order")
 )
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func realloc(f []float64, l int) []float64 {
+	if l < cap(f) {
+		return f[:l]
+	}
+	return make([]float64, l)
+}

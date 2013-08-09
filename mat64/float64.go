@@ -1,4 +1,4 @@
-package matrix
+package mat64
 
 import (
 	"github.com/gonum/blas"

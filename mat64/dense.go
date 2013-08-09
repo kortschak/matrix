@@ -875,7 +875,6 @@ func (m *Dense) Mul(a, b Matrix) {
 		}
 		for c := 0; c < bc; c++ {
 			var v float64
-			row := make([]float64, ac)
 			for i, e := range row {
 				v += e * b.At(i, c)
 			}
